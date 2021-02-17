@@ -3,20 +3,32 @@ use iced::{executor, Application, Command, Element, Settings};
 use iced::{Button, Column, HorizontalAlignment, Length, Row, Space, Text};
 use std::mem;
 
-pub fn main() -> iced::Result {
-    let settings = build_settings();
-    Alarm::run(settings)
+#[derive(structopt::StructOpt)]
+struct Args {
+    /// base url to use, should have endpoints: 
+    ///   url/next_alarm (GET POST)
+    ///   url/usual_alarm (GET POST)
+    url: String,
+
+    /// http basic authentication password for those endpoints
+    password: String
 }
 
-fn build_settings() -> Settings<()> {
+#[paw::main]
+pub fn main(args: Args) {
+    let settings = build_settings(args);
+    Alarm::run(settings).unwrap();
+}
+
+fn build_settings(args: Args) -> Settings<Args> {
     Settings {
         window: iced::window::Settings::default(),
-        flags: (),
+        flags: args,
         default_font: None,
         #[cfg(not(features = "pinephone"))]
-        default_text_size: 100,
+        default_text_size: 70,
         #[cfg(features = "pinephone")]
-        default_text_size: 100,
+        default_text_size: 70,
         antialiasing: false,
     }
 }
@@ -96,9 +108,9 @@ enum Message {
 impl Application for Alarm {
     type Executor = executor::Default;
     type Message = Message;
-    type Flags = ();
+    type Flags = Args;
 
-    fn new(_flags: ()) -> (Alarm, Command<Message>) {
+    fn new(flags: Args) -> (Alarm, Command<Message>) {
         let alarm = Alarm {
             editing: Clocks::Tomorrow(AlarmTime::default()),
             other: Clocks::Usually(AlarmTime::default()),
@@ -134,19 +146,19 @@ impl Application for Alarm {
         match &self.editing {
             Clocks::Tomorrow(time) => Column::new()
                 .push(clock_title("Tomorrow"))
-                .push(clock(&time, 100))
+                .push(clock(&time, 70))
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
                 .push(clock_title("Usually"))
-                .push(clock_button(self.other.inner(), 100, edit_usually))
+                .push(clock_button(self.other.inner(), 70, edit_usually))
                 .align_items(iced::Align::Center)
                 .into(),
             Clocks::Usually(time) => Column::new()
                 .push(clock_title("Tomorrow"))
-                .push(clock_button(self.other.inner(), 100, edit_tomorrow))
+                .push(clock_button(self.other.inner(), 70, edit_tomorrow))
                 .push(clock_title("Usually"))
-                .push(clock(&time, 100))
+                .push(clock(&time, 70))
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
