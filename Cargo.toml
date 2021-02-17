@@ -5,6 +5,8 @@ authors = ["dskleingeld <11743287+dskleingeld@users.noreply.github.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+pinephone = []
 
 [dependencies]
 iced = { git= "https://github.com/dskleingeld/iced", features = ["glow", "tokio"] }
