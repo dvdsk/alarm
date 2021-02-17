@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 iced = { git= "https://github.com/dskleingeld/iced", features = ["glow", "tokio"] }
+chrono = "0.4"
