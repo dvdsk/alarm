@@ -3,6 +3,8 @@ use iced::{executor, Application, Command, Element, Settings};
 use iced::{Button, Column, HorizontalAlignment, Length, Row, Space, Text};
 use std::mem;
 
+mod api;
+
 #[derive(structopt::StructOpt)]
 struct Args {
     /// base url to use, should have endpoints: 
@@ -10,8 +12,10 @@ struct Args {
     ///   url/usual_alarm (GET POST)
     url: String,
 
-    /// http basic authentication password for those endpoints
-    password: String
+    /// http basic authentication username
+    username: String,
+    /// http basic authentication password
+    password: String,
 }
 
 #[paw::main]
@@ -33,25 +37,71 @@ fn build_settings(args: Args) -> Settings<Args> {
     }
 }
 
-enum Clocks {
+#[derive(Debug, Clone)]
+pub enum Clocks {
     Tomorrow(AlarmTime),
     Usually(AlarmTime),
 }
 
 impl Clocks {
-    fn inner(&mut self) -> &mut AlarmTime {
+    fn into_inner(self) -> AlarmTime {
         match self {
             Self::Tomorrow(a) => a,
             Self::Usually(a) => a,
         }
     }
+    fn inner_mut(&mut self) -> &mut AlarmTime {
+        match self {
+            Self::Tomorrow(a) => a,
+            Self::Usually(a) => a,
+        }
+    }
+    fn inner(&self) -> &AlarmTime {
+        match self {
+            Self::Tomorrow(a) => a,
+            Self::Usually(a) => a,
+        }
+    }
+    fn set_synced(mut self) -> Self {
+        self.inner_mut().set_synced();
+        self
+    }
 }
 
-#[derive(Default, Clone, Debug, PartialEq)]
-struct AlarmTime(Option<(i8, i8)>);
+type Time = Option<(u8,u8)>;
+#[derive(Clone, Debug, PartialEq)]
+pub enum AlarmTime {
+    Set(Time),
+    Synced(Time),
+}
+
 impl AlarmTime {
+    fn set_synced(&mut self) {
+        let t = self.inner().clone();
+        *self = Self::Synced(t);
+    }
+    fn inner_mut(&mut self) -> &mut Time {
+        match self {
+            Self::Set(t) => t,
+            Self::Synced(t) => t,
+        }
+    }
+
+    fn inner(&self) -> &Time {
+        match self {
+            Self::Set(t) => t,
+            Self::Synced(t) => t,
+        }
+    }
+
+    fn inner_or_def(&mut self) -> (i8, i8) {
+        self.inner_mut()
+            .map(|(t1,t2)| (t1 as i8, t2 as i8))
+            .unwrap_or((12,0))
+    }
+
     fn adjust_min(&mut self, n: i8) {
-        let (mut hour, mut min) = self.0.unwrap_or((12, 0));
+        let (mut hour, mut min) = self.inner_or_def();
         min = min + n;
         hour += min / 60;
         min = i8::min(min % 60, 59);
@@ -60,7 +110,7 @@ impl AlarmTime {
             hour -= 1;
         }
         hour = Self::fix_hour(hour);
-        self.0.replace((hour, min));
+        *self = Self::Set(Some((hour as u8,min as u8)));
     }
     fn fix_hour(hour: i8) -> i8 {
         if hour > 23 {
@@ -72,17 +122,17 @@ impl AlarmTime {
         }
     }
     fn adjust_hour(&mut self, n: i8) {
-        let (mut hour, min) = self.0.unwrap_or((12, 0));
+        let (mut hour, min) = self.inner_or_def();
         hour += n;
         hour = Self::fix_hour(hour);
-        self.0.replace((hour, min));
+        *self = Self::Set(Some((hour as u8,min as u8)));
     }
 }
 
 use std::fmt;
 impl fmt::Display for AlarmTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some((hour, min)) = self.0.as_ref() {
+        if let Some((hour, min)) = self.inner() {
             write!(f, "{:02}:{:02}", hour, min)
         } else {
             write!(f, "00:00")
@@ -96,13 +146,17 @@ struct Alarm {
     edit_tomorrow: button::State,
     edit_usually: button::State,
     buttons: [button::State; 12],
+    api: api::Api,
 }
 
 #[derive(Debug, Clone)]
-enum Message {
+pub enum Message {
     AdjHour(i8),
     AdjMinute(i8),
     SwapEdit,
+    Synced(Clocks),
+    RemoteAlarms(Time, Time),
+    RemoteError(api::Error),
 }
 
 impl Application for Alarm {
@@ -111,14 +165,17 @@ impl Application for Alarm {
     type Flags = Args;
 
     fn new(flags: Args) -> (Alarm, Command<Message>) {
+        let Args {url, username, password} = flags;
+        let api = api::Api::from(url, username, password);
         let alarm = Alarm {
-            editing: Clocks::Tomorrow(AlarmTime::default()),
-            other: Clocks::Usually(AlarmTime::default()),
+            editing: Clocks::Tomorrow(AlarmTime::Set(None)),
+            other: Clocks::Usually(AlarmTime::Set(None)),
             edit_tomorrow: button::State::default(),
             edit_usually: button::State::default(),
             buttons: [button::State::new(); 12],
+            api: api.clone(),
         };
-        (alarm, Command::none())
+        (alarm, api.get_alarms())
     }
 
     fn title(&self) -> String {
@@ -128,9 +185,18 @@ impl Application for Alarm {
     fn update(&mut self, message: Message) -> Command<Message> {
         use Message::*;
         match message {
-            AdjHour(h) => self.editing.inner().adjust_hour(h),
-            AdjMinute(m) => self.editing.inner().adjust_min(m),
+            AdjHour(h) => {
+                self.editing.inner_mut().adjust_hour(h);
+                return self.api.sync(&self.editing);
+            }
+            AdjMinute(m) => {
+                self.editing.inner_mut().adjust_min(m);
+                return self.api.sync(&self.editing);
+            }
             SwapEdit => mem::swap(&mut self.editing, &mut self.other),
+            Synced(clock) => self.set_synced(clock),
+            RemoteAlarms(t1,t2) => self.set_remote_times(t1,t2),
+            RemoteError(e) => panic!("failed getting alarms: {}", e),
         }
         Command::none()
     }
@@ -151,12 +217,12 @@ impl Application for Alarm {
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
                 .push(clock_title("Usually"))
-                .push(clock_button(self.other.inner(), 70, edit_usually))
+                .push(clock_button(self.other.inner_mut(), 70, edit_usually))
                 .align_items(iced::Align::Center)
                 .into(),
             Clocks::Usually(time) => Column::new()
                 .push(clock_title("Tomorrow"))
-                .push(clock_button(self.other.inner(), 70, edit_tomorrow))
+                .push(clock_button(self.other.inner_mut(), 70, edit_tomorrow))
                 .push(clock_title("Usually"))
                 .push(clock(&time, 70))
                 .push(view_row(row1, 1, 1))
@@ -218,6 +284,39 @@ impl Alarm {
         let (row1, rest) = rows.split_at_mut(4);
         let (row2, row3) = rest.split_at_mut(4);
         (row1, row2, row3)
+    }
+
+    fn set_remote_times(&mut self, tomorrow: Time, usually: Time) {
+        use Clocks::*;
+        use AlarmTime::*;
+
+        match self.editing {
+            Tomorrow(_) => {
+                self.editing = Tomorrow(Synced(tomorrow));
+                self.other = Usually(Synced(usually));
+            }
+            Usually(_) => {
+                self.editing = Usually(Synced(usually));
+                self.other = Tomorrow(Synced(tomorrow));
+            }
+        }
+    }
+
+    fn set_synced(&mut self, clock: Clocks) {
+        use Clocks::*;
+
+        let t3 = self.other.inner();
+        match (&clock, &self.editing) {
+            (Tomorrow(t1), Tomorrow(t2)) if t1 == t2 => 
+                self.editing = clock.set_synced(),
+            (Tomorrow(t1), Usually(_)) if t1 == t3 => 
+                self.other = clock.set_synced(),
+            (Usually(t1), Usually(t2)) if t1 == t2 => 
+                self.editing = clock.set_synced(),
+            (Usually(t1), Tomorrow(_)) if t1 == t3 =>
+                self.other = clock.set_synced(),
+            _ => (), // time setting has changed, not synced
+        }
     }
 }
 
