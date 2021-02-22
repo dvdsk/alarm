@@ -1,6 +1,7 @@
 use iced::button;
 use iced::{executor, Application, Command, Element, Settings};
-use iced::{Button, Container, Column, HorizontalAlignment, Length, Row, Space, Text};
+use iced::{Button, Container, Column, Length, Row, Space, Text};
+use iced::{HorizontalAlignment, VerticalAlignment};
 use std::mem;
 
 mod api;
@@ -66,6 +67,10 @@ impl Clocks {
     fn set_synced(mut self) -> Self {
         self.inner_mut().set_synced();
         self
+    }
+
+    fn set_none(&mut self) {
+        *self.inner_mut() = AlarmTime::Set(None);
     }
 }
 
@@ -136,7 +141,7 @@ impl fmt::Display for AlarmTime {
         if let Some((hour, min)) = self.inner() {
             write!(f, "{:02}:{:02}", hour, min)
         } else {
-            write!(f, "00:00")
+            write!(f, "--:--")
         }
     }
 }
@@ -146,6 +151,7 @@ struct Alarm {
     other: Clocks,
     edit_tomorrow: button::State,
     edit_usually: button::State,
+    clear: button::State,
     buttons: [button::State; 12],
     error: Option<String>,
     api: api::Api,
@@ -156,6 +162,7 @@ pub enum Message {
     AdjHour(i8),
     AdjMinute(i8),
     SwapEdit,
+    ClearEdit,
     Synced(Clocks),
     RemoteAlarms(Time, Time),
     RemoteError(api::Error),
@@ -174,6 +181,7 @@ impl Application for Alarm {
             other: Clocks::Usually(AlarmTime::Set(None)),
             edit_tomorrow: button::State::default(),
             edit_usually: button::State::default(),
+            clear: button::State::default(),
             buttons: [button::State::new(); 12],
             error: None,
             api: api.clone(),
@@ -197,6 +205,7 @@ impl Application for Alarm {
                 return self.api.sync(&self.editing);
             }
             SwapEdit => mem::swap(&mut self.editing, &mut self.other),
+            ClearEdit => self.editing.set_none(),
             Synced(clock) => self.set_synced(clock),
             RemoteAlarms(t1,t2) => self.set_remote_times(t1,t2),
             RemoteError(e) => self.error = Some(e.to_string()),
@@ -210,6 +219,7 @@ impl Application for Alarm {
             edit_usually,
             buttons,
             error,
+            clear,
             ..
         } = self;
         let (row1, row2, row3) = Self::borrow_rows(buttons);
@@ -222,7 +232,7 @@ impl Application for Alarm {
         let column = column.push(clock_title("Tomorrow"));
         let column = match &self.editing {
             Clocks::Tomorrow(time) => column
-                .push(clock(&time, 70))
+                .push(clock(&time, clear))
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
@@ -232,7 +242,7 @@ impl Application for Alarm {
             Clocks::Usually(time) => column
                 .push(clock_button(self.other.inner_mut(), 70, edit_tomorrow))
                 .push(clock_title("Usually"))
-                .push(clock(&time, 70))
+                .push(clock(&time, clear))
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
@@ -335,16 +345,6 @@ impl Alarm {
     }
 }
 
-fn clock(hour_min: &AlarmTime, size: u16) -> Container<Message> {
-    let text = format!("{}", hour_min);
-    let text = Text::new(text)
-        .size(size)
-        .width(Length::Fill)
-        .horizontal_alignment(HorizontalAlignment::Center);
-    Container::new(text)
-        .style(hour_min)
-}
-
 fn error_text<'a>(msg: &String) -> Container<'a, Message> {
     let text = Text::new(msg.clone())
         .size(20)
@@ -352,6 +352,28 @@ fn error_text<'a>(msg: &String) -> Container<'a, Message> {
         .horizontal_alignment(HorizontalAlignment::Center);
     Container::new(text)
         .style(style::Error)
+}
+
+fn clock<'a>(hour_min: &AlarmTime, clear: &'a mut button::State) -> Container<'a, Message> {
+    let time_txt = format!("{}", hour_min);
+    let time_txt = Text::new(time_txt)
+        .size(70);
+    let time_txt = Container::new(time_txt)
+        .style(hour_min);
+
+    let clear_txt = Text::new("x")
+        .size(70)
+        .vertical_alignment(VerticalAlignment::Center);
+    let clear = Button::new(clear, clear_txt)
+        .on_press(Message::ClearEdit)
+        .style(hour_min);
+
+    let row = Row::new()
+        .push(time_txt)
+        .push(clear)
+        .spacing(10)
+        .align_items(iced::Align::Center);
+    Container::new(row)
 }
 
 fn clock_button<'a>(

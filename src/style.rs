@@ -1,8 +1,5 @@
 use iced::{Color, Vector};
-use iced::{
-    button, checkbox, container, progress_bar, radio, rule, scrollable,
-    slider, text_input,
-};
+use iced::{button, container};
 use crate::AlarmTime;
 
 const APP_BACKGROUND: Color = Color::from_rgb(

@@ -1,8 +1,4 @@
-use iced::button;
-use iced::{executor, Application, Command, Element, Settings};
-use iced::{Button, Column, HorizontalAlignment, Length, Row, Space, Text};
-use std::mem;
-
+use iced::Command;
 use super::{Message, Time, Clocks};
 
 #[derive(thiserror::Error, Clone, Debug)]
@@ -17,8 +13,6 @@ impl From<reqwest::Error> for Error {
         Self::CouldNotConnect(string)
     }
 }
-
-
 
 #[derive(Clone)]
 pub struct Api {
