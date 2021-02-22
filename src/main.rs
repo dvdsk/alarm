@@ -1,9 +1,10 @@
 use iced::button;
 use iced::{executor, Application, Command, Element, Settings};
-use iced::{Button, Column, HorizontalAlignment, Length, Row, Space, Text};
+use iced::{Button, Container, Column, HorizontalAlignment, Length, Row, Space, Text};
 use std::mem;
 
 mod api;
+mod style;
 
 #[derive(structopt::StructOpt)]
 struct Args {
@@ -209,7 +210,7 @@ impl Application for Alarm {
             ..
         } = self;
         let (row1, row2, row3) = Self::borrow_rows(buttons);
-        match &self.editing {
+        let column = match &self.editing {
             Clocks::Tomorrow(time) => Column::new()
                 .push(clock_title("Tomorrow"))
                 .push(clock(&time, 70))
@@ -218,8 +219,7 @@ impl Application for Alarm {
                 .push(view_row(row3, 9, 15))
                 .push(clock_title("Usually"))
                 .push(clock_button(self.other.inner_mut(), 70, edit_usually))
-                .align_items(iced::Align::Center)
-                .into(),
+                .align_items(iced::Align::Center),
             Clocks::Usually(time) => Column::new()
                 .push(clock_title("Tomorrow"))
                 .push(clock_button(self.other.inner_mut(), 70, edit_tomorrow))
@@ -228,9 +228,16 @@ impl Application for Alarm {
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
                 .push(view_row(row3, 9, 15))
-                .align_items(iced::Align::Center)
-                .into(),
-        }
+                .align_items(iced::Align::Center),
+        };
+
+        Container::new(column)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .style(style::Theme)
+            .into()
     }
     fn mode(&self) -> iced::window::Mode {
         #[cfg(features = "pinephone")]
@@ -270,7 +277,7 @@ fn adjust_button<'a>(
     let text = Text::new(c)
         .width(Length::Fill)
         .horizontal_alignment(HorizontalAlignment::Center);
-    Button::new(state, text).on_press(msg)
+    Button::new(state, text).on_press(msg).style(style::Theme)
 }
 
 impl Alarm {
@@ -287,19 +294,8 @@ impl Alarm {
     }
 
     fn set_remote_times(&mut self, tomorrow: Time, usually: Time) {
-        use Clocks::*;
-        use AlarmTime::*;
-
-        match self.editing {
-            Tomorrow(_) => {
-                self.editing = Tomorrow(Synced(tomorrow));
-                self.other = Usually(Synced(usually));
-            }
-            Usually(_) => {
-                self.editing = Usually(Synced(usually));
-                self.other = Tomorrow(Synced(tomorrow));
-            }
-        }
+        self.set_synced(Clocks::Tomorrow(AlarmTime::Synced(tomorrow)));
+        self.set_synced(Clocks::Usually(AlarmTime::Synced(usually)));
     }
 
     fn set_synced(&mut self, clock: Clocks) {
@@ -333,12 +329,11 @@ fn clock_button<'a>(
     size: u16,
     edit: &'a mut button::State,
 ) -> Button<'a, Message> {
-    let text = format!("{}", hour_min);
+    let text = format!("{}", &hour_min);
     let text = Text::new(text).size(size);
-    // .width(Length::Fill)
-    // .horizontal_alignment(HorizontalAlignment::Center);
-    Button::new(edit, text).on_press(Message::SwapEdit)
-    // .horizontal_alignment(HorizontalAlignment::Center)
+    Button::new(edit, text)
+        .on_press(Message::SwapEdit)
+        .style(hour_min)
 }
 
 #[cfg(test)]
