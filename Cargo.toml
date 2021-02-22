@@ -13,7 +13,7 @@ iced = { git= "https://github.com/dskleingeld/iced", features = ["glow", "tokio"
 chrono = "0.4"
 structopt = { version = "0.3", features = [ "paw" ] }
 paw = "1"
-reqwest = { version = "0.11", features = [ "rustls-tls" ] }
+reqwest = { version = "0.11", features = [ "rustls-tls" ], default-features = false}
 thiserror = "1"
 bincode = "1.3"
 serde = "1"

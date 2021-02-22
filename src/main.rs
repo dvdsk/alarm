@@ -147,6 +147,7 @@ struct Alarm {
     edit_tomorrow: button::State,
     edit_usually: button::State,
     buttons: [button::State; 12],
+    error: Option<String>,
     api: api::Api,
 }
 
@@ -174,6 +175,7 @@ impl Application for Alarm {
             edit_tomorrow: button::State::default(),
             edit_usually: button::State::default(),
             buttons: [button::State::new(); 12],
+            error: None,
             api: api.clone(),
         };
         (alarm, api.get_alarms())
@@ -197,7 +199,7 @@ impl Application for Alarm {
             SwapEdit => mem::swap(&mut self.editing, &mut self.other),
             Synced(clock) => self.set_synced(clock),
             RemoteAlarms(t1,t2) => self.set_remote_times(t1,t2),
-            RemoteError(e) => panic!("failed getting alarms: {}", e),
+            RemoteError(e) => self.error = Some(e.to_string()),
         }
         Command::none()
     }
@@ -207,12 +209,19 @@ impl Application for Alarm {
             edit_tomorrow,
             edit_usually,
             buttons,
+            error,
             ..
         } = self;
         let (row1, row2, row3) = Self::borrow_rows(buttons);
+        
+        let column = match error {
+            None => Column::new(),
+            Some(msg) => Column::new().push(error_text(msg)),
+        };
+
+        let column = column.push(clock_title("Tomorrow"));
         let column = match &self.editing {
-            Clocks::Tomorrow(time) => Column::new()
-                .push(clock_title("Tomorrow"))
+            Clocks::Tomorrow(time) => column
                 .push(clock(&time, 70))
                 .push(view_row(row1, 1, 1))
                 .push(view_row(row2, 3, 5))
@@ -220,8 +229,7 @@ impl Application for Alarm {
                 .push(clock_title("Usually"))
                 .push(clock_button(self.other.inner_mut(), 70, edit_usually))
                 .align_items(iced::Align::Center),
-            Clocks::Usually(time) => Column::new()
-                .push(clock_title("Tomorrow"))
+            Clocks::Usually(time) => column
                 .push(clock_button(self.other.inner_mut(), 70, edit_tomorrow))
                 .push(clock_title("Usually"))
                 .push(clock(&time, 70))
@@ -261,11 +269,11 @@ fn view_row(row: &mut [button::State], hour_mul: i8, min_mul: i8) -> Row<Message
     let hmin = &mut hmin[0];
 
     Row::new()
-        .push(adjust_button(mplus, "+", AdjMinute(min_mul)))
-        .push(adjust_button(mmin, "-", AdjMinute(-1 * min_mul)))
-        .push(Text::new(" "))
         .push(adjust_button(hplus, "+", AdjHour(hour_mul)))
         .push(adjust_button(hmin, "-", AdjHour(-1 * hour_mul)))
+        .push(Text::new(" "))
+        .push(adjust_button(mplus, "+", AdjMinute(min_mul)))
+        .push(adjust_button(mmin, "-", AdjMinute(-1 * min_mul)))
         .align_items(iced::Align::Center)
 }
 
@@ -335,6 +343,15 @@ fn clock(hour_min: &AlarmTime, size: u16) -> Container<Message> {
         .horizontal_alignment(HorizontalAlignment::Center);
     Container::new(text)
         .style(hour_min)
+}
+
+fn error_text<'a>(msg: &String) -> Container<'a, Message> {
+    let text = Text::new(msg.clone())
+        .size(20)
+        .width(Length::Fill)
+        .horizontal_alignment(HorizontalAlignment::Center);
+    Container::new(text)
+        .style(style::Error)
 }
 
 fn clock_button<'a>(

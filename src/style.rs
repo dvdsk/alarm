@@ -12,16 +12,25 @@ const APP_BACKGROUND: Color = Color::from_rgb(
 );
 
 const TIME_SET_TEXT: Color = Color::from_rgb(
-    0x36 as f32 / 255.0,
-    0x39 as f32 / 255.0,
-    0x3F as f32 / 255.0,
+    0xD3 as f32 / 255.0,
+    0xD3 as f32 / 255.0,
+    0xD3 as f32 / 255.0,
 );
 
-const TIME_SYNCED_TEXT: Color = Color::from_rgb(
-    0x36 as f32 / 255.0,
-    0x39 as f32 / 255.0,
-    0x3F as f32 / 255.0,
-);
+const TIME_SYNCED_TEXT: Color = Color::WHITE;
+const TIME_BACKGROUND: Color = Color::from_rgb(0.11, 0.42, 0.87);
+const RED: Color = Color::from_rgb(0.80, 0.1, 0.1);
+
+pub struct Error;
+impl container::StyleSheet for Error {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: None,
+            text_color: RED.into(),
+            ..container::Style::default()
+        }
+    }
+}
 
 pub struct Theme;
 impl container::StyleSheet for Theme {
@@ -78,8 +87,8 @@ mod synced {
     impl container::StyleSheet for Theme {
         fn style(&self) -> container::Style {
             container::Style {
-                background: Color::from_rgb8(0x36, 0x39, 0x3F).into(),
-                text_color: Color::WHITE.into(),
+                background: TIME_BACKGROUND.into(),
+                text_color: TIME_SYNCED_TEXT.into(),
                 ..container::Style::default()
             }
         }
@@ -88,19 +97,12 @@ mod synced {
     impl button::StyleSheet for Theme {
         fn active(&self) -> button::Style {
             button::Style {
-                background: Color::from_rgb(0.11, 0.42, 0.87).into(),
+                background: TIME_BACKGROUND.into(),
                 border_radius: 0.0,
                 shadow_offset: Vector::new(0.0, 0.0),
-                text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
+                text_color: TIME_SYNCED_TEXT.into(),
+                // text_color: Color::WHITE.into(),
                 ..button::Style::default()
-            }
-        }
-
-        fn hovered(&self) -> button::Style {
-            button::Style {
-                text_color: Color::WHITE,
-                shadow_offset: Vector::new(1.0, 2.0),
-                ..self.active()
             }
         }
     }
@@ -113,8 +115,8 @@ mod set {
     impl container::StyleSheet for Theme {
         fn style(&self) -> container::Style {
             container::Style {
-                background: Color::from_rgb8(0x36, 0x39, 0x3F).into(),
-                text_color: Color::WHITE.into(),
+                background: TIME_BACKGROUND.into(),
+                text_color: TIME_SET_TEXT.into(),
                 ..container::Style::default()
             }
         }
@@ -123,19 +125,11 @@ mod set {
     impl button::StyleSheet for Theme {
         fn active(&self) -> button::Style {
             button::Style {
-                background: Color::from_rgb(0.11, 0.42, 0.87).into(),
+                background: TIME_BACKGROUND.into(),
                 border_radius: 12.0,
-                shadow_offset: Vector::new(1.0, 1.0),
-                text_color: Color::from_rgb8(0xEE, 0xEE, 0xEE),
+                shadow_offset: Vector::new(0.0, 0.0),
+                text_color: TIME_SET_TEXT,
                 ..button::Style::default()
-            }
-        }
-
-        fn hovered(&self) -> button::Style {
-            button::Style {
-                text_color: Color::WHITE,
-                shadow_offset: Vector::new(1.0, 2.0),
-                ..self.active()
             }
         }
     }
