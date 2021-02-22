@@ -294,8 +294,19 @@ impl Alarm {
     }
 
     fn set_remote_times(&mut self, tomorrow: Time, usually: Time) {
-        self.set_synced(Clocks::Tomorrow(AlarmTime::Synced(tomorrow)));
-        self.set_synced(Clocks::Usually(AlarmTime::Synced(usually)));
+        use Clocks::*;
+        use AlarmTime::*;
+
+        match self.editing {
+            Tomorrow(_) => {
+                self.editing = Tomorrow(Synced(tomorrow));
+                self.other = Usually(Synced(usually));
+            }
+            Usually(_) => {
+                self.editing = Usually(Synced(usually));
+                self.other = Tomorrow(Synced(tomorrow));
+            }
+        }
     }
 
     fn set_synced(&mut self, clock: Clocks) {
@@ -316,12 +327,14 @@ impl Alarm {
     }
 }
 
-fn clock(hour_min: &AlarmTime, size: u16) -> Text {
+fn clock(hour_min: &AlarmTime, size: u16) -> Container<Message> {
     let text = format!("{}", hour_min);
-    Text::new(text)
+    let text = Text::new(text)
         .size(size)
         .width(Length::Fill)
-        .horizontal_alignment(HorizontalAlignment::Center)
+        .horizontal_alignment(HorizontalAlignment::Center);
+    Container::new(text)
+        .style(hour_min)
 }
 
 fn clock_button<'a>(

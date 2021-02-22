@@ -70,23 +70,23 @@ impl Api {
     async fn do_gets(self) -> Result<(Time,Time), Error> {
         let client = reqwest::Client::new();
 
-        let url = format!("{}/alarm/tomorrow", self.url);
-        let tomorrow = client.get(&url)
-            .basic_auth(&self.username, Some(&self.password))
-            .send().await?
-            .error_for_status()?
-            .bytes().await?;
-        let tomorrow: Time = bincode::deserialize(&tomorrow).unwrap();
+        let tomorrow = self.clone().get(&client, "/alarm/tomorrow");
+        let usually = self.get(&client, "/alarm/usually");
+        let (tomorrow, usually) = tokio::join!(tomorrow, usually);
 
-        let url = format!("{}/alarm/usually", self.url);
-        let usually = client.get(&url)
+        Ok((tomorrow?, usually?))
+    }
+
+    pub async fn get(self, client: &reqwest::Client, endpoint: &str) -> Result<Time, Error> {
+        let url = format!("{}{}", self.url, endpoint);
+        let bytes = client.get(&url)
             .basic_auth(self.username, Some(self.password))
+            .timeout(std::time::Duration::from_secs(2))
             .send().await?
             .error_for_status()?
             .bytes().await?;
-        let usually: Time = bincode::deserialize(&usually).unwrap();
-
-        Ok((tomorrow, usually))
+        let time: Time = bincode::deserialize(&bytes).unwrap();
+        Ok(time)
     }
 
     pub async fn post(self, endpoint: &str, time: (u8,u8)) -> Result<(), Error> {
@@ -97,6 +97,7 @@ impl Api {
 
         client.post(&url)
             .basic_auth(&self.username, Some(&self.password))
+            .timeout(std::time::Duration::from_secs(2))
             .body(body)
             .send().await?
             .error_for_status()?;

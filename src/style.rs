@@ -5,11 +5,29 @@ use iced::{
 };
 use crate::AlarmTime;
 
+const APP_BACKGROUND: Color = Color::from_rgb(
+    0x36 as f32 / 255.0,
+    0x39 as f32 / 255.0,
+    0x3F as f32 / 255.0,
+);
+
+const TIME_SET_TEXT: Color = Color::from_rgb(
+    0x36 as f32 / 255.0,
+    0x39 as f32 / 255.0,
+    0x3F as f32 / 255.0,
+);
+
+const TIME_SYNCED_TEXT: Color = Color::from_rgb(
+    0x36 as f32 / 255.0,
+    0x39 as f32 / 255.0,
+    0x3F as f32 / 255.0,
+);
+
 pub struct Theme;
 impl container::StyleSheet for Theme {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Color::from_rgb8(0x36, 0x39, 0x3F).into(),
+            background: APP_BACKGROUND.into(),
             text_color: Color::WHITE.into(),
             ..container::Style::default()
         }
@@ -38,8 +56,17 @@ impl button::StyleSheet for Theme {
 impl From<&AlarmTime> for Box<dyn button::StyleSheet> {
     fn from(time: &AlarmTime) -> Self {
         match time {
-            AlarmTime::Set(_) => set::Button.into(),
-            AlarmTime::Synced(_) => synced::Button.into(),
+            AlarmTime::Set(_) => set::Theme.into(),
+            AlarmTime::Synced(_) => synced::Theme.into(),
+        }
+    }
+}
+
+impl From<&AlarmTime> for Box<dyn container::StyleSheet> {
+    fn from(time: &AlarmTime) -> Self {
+        match time {
+            AlarmTime::Set(_) => set::Theme.into(),
+            AlarmTime::Synced(_) => synced::Theme.into(),
         }
     }
 }
@@ -47,8 +74,18 @@ impl From<&AlarmTime> for Box<dyn button::StyleSheet> {
 mod synced {
     use super::*;
 
-    pub struct Button;
-    impl button::StyleSheet for Button {
+    pub struct Theme;
+    impl container::StyleSheet for Theme {
+        fn style(&self) -> container::Style {
+            container::Style {
+                background: Color::from_rgb8(0x36, 0x39, 0x3F).into(),
+                text_color: Color::WHITE.into(),
+                ..container::Style::default()
+            }
+        }
+    }
+
+    impl button::StyleSheet for Theme {
         fn active(&self) -> button::Style {
             button::Style {
                 background: Color::from_rgb(0.11, 0.42, 0.87).into(),
@@ -72,8 +109,18 @@ mod synced {
 mod set {
     use super::*;
 
-    pub struct Button;
-    impl button::StyleSheet for Button {
+    pub struct Theme;
+    impl container::StyleSheet for Theme {
+        fn style(&self) -> container::Style {
+            container::Style {
+                background: Color::from_rgb8(0x36, 0x39, 0x3F).into(),
+                text_color: Color::WHITE.into(),
+                ..container::Style::default()
+            }
+        }
+    }
+
+    impl button::StyleSheet for Theme {
         fn active(&self) -> button::Style {
             button::Style {
                 background: Color::from_rgb(0.11, 0.42, 0.87).into(),
