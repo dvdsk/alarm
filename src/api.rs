@@ -43,11 +43,11 @@ impl Api {
         let api = self.clone();
         let future = match clock {
             Clocks::Usually(t) => {
-                let t = t.inner().unwrap();
+                let t = t.inner();
                 api.post("/alarm/usually", t)
             }
             Clocks::Tomorrow(t) => {
-                let t = t.inner().unwrap();
+                let t = t.inner();
                 api.post("/alarm/tomorrow", t)
             }
         };
@@ -83,7 +83,7 @@ impl Api {
         Ok(time)
     }
 
-    pub async fn post(self, endpoint: &str, time: (u8,u8)) -> Result<(), Error> {
+    pub async fn post(self, endpoint: &str, time: Time) -> Result<(), Error> {
         let url = format!("{}{}", self.url, endpoint);
 
         let body = bincode::serialize(&time).unwrap();

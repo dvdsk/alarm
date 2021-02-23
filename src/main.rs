@@ -1,6 +1,6 @@
 use iced::button;
 use iced::{executor, Application, Command, Element, Settings};
-use iced::{Button, Container, Column, Length, Row, Space, Text};
+use iced::{Button, Container, Column, Length, Row, Text};
 use iced::{HorizontalAlignment, VerticalAlignment};
 use std::mem;
 
@@ -46,12 +46,6 @@ pub enum Clocks {
 }
 
 impl Clocks {
-    fn into_inner(self) -> AlarmTime {
-        match self {
-            Self::Tomorrow(a) => a,
-            Self::Usually(a) => a,
-        }
-    }
     fn inner_mut(&mut self) -> &mut AlarmTime {
         match self {
             Self::Tomorrow(a) => a,
@@ -159,10 +153,10 @@ struct Alarm {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Clear,
     AdjHour(i8),
     AdjMinute(i8),
     SwapEdit,
-    ClearEdit,
     Synced(Clocks),
     RemoteAlarms(Time, Time),
     RemoteError(api::Error),
@@ -196,6 +190,10 @@ impl Application for Alarm {
     fn update(&mut self, message: Message) -> Command<Message> {
         use Message::*;
         match message {
+            Clear => {
+                self.editing.set_none();
+                return self.api.sync(&self.editing);
+            }
             AdjHour(h) => {
                 self.editing.inner_mut().adjust_hour(h);
                 return self.api.sync(&self.editing);
@@ -205,7 +203,6 @@ impl Application for Alarm {
                 return self.api.sync(&self.editing);
             }
             SwapEdit => mem::swap(&mut self.editing, &mut self.other),
-            ClearEdit => self.editing.set_none(),
             Synced(clock) => self.set_synced(clock),
             RemoteAlarms(t1,t2) => self.set_remote_times(t1,t2),
             RemoteError(e) => self.error = Some(e.to_string()),
@@ -365,7 +362,7 @@ fn clock<'a>(hour_min: &AlarmTime, clear: &'a mut button::State) -> Container<'a
         .size(70)
         .vertical_alignment(VerticalAlignment::Center);
     let clear = Button::new(clear, clear_txt)
-        .on_press(Message::ClearEdit)
+        .on_press(Message::Clear)
         .style(hour_min);
 
     let row = Row::new()
