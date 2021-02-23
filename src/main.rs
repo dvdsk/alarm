@@ -6,6 +6,8 @@ use std::mem;
 
 mod api;
 mod style;
+mod clock;
+use clock::{Clocks, AlarmTime, Time};
 
 #[derive(structopt::StructOpt)]
 struct Args {
@@ -36,107 +38,6 @@ fn build_settings(args: Args) -> Settings<Args> {
         #[cfg(features = "pinephone")]
         default_text_size: 70,
         antialiasing: false,
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Clocks {
-    Tomorrow(AlarmTime),
-    Usually(AlarmTime),
-}
-
-impl Clocks {
-    fn inner_mut(&mut self) -> &mut AlarmTime {
-        match self {
-            Self::Tomorrow(a) => a,
-            Self::Usually(a) => a,
-        }
-    }
-    fn inner(&self) -> &AlarmTime {
-        match self {
-            Self::Tomorrow(a) => a,
-            Self::Usually(a) => a,
-        }
-    }
-    fn set_synced(mut self) -> Self {
-        self.inner_mut().set_synced();
-        self
-    }
-
-    fn set_none(&mut self) {
-        *self.inner_mut() = AlarmTime::Set(None);
-    }
-}
-
-type Time = Option<(u8,u8)>;
-#[derive(Clone, Debug, PartialEq)]
-pub enum AlarmTime {
-    Set(Time),
-    Synced(Time),
-}
-
-impl AlarmTime {
-    fn set_synced(&mut self) {
-        let t = self.inner().clone();
-        *self = Self::Synced(t);
-    }
-    fn inner_mut(&mut self) -> &mut Time {
-        match self {
-            Self::Set(t) => t,
-            Self::Synced(t) => t,
-        }
-    }
-
-    fn inner(&self) -> &Time {
-        match self {
-            Self::Set(t) => t,
-            Self::Synced(t) => t,
-        }
-    }
-
-    fn inner_or_def(&mut self) -> (i8, i8) {
-        self.inner_mut()
-            .map(|(t1,t2)| (t1 as i8, t2 as i8))
-            .unwrap_or((12,0))
-    }
-
-    fn adjust_min(&mut self, n: i8) {
-        let (mut hour, mut min) = self.inner_or_def();
-        min = min + n;
-        hour += min / 60;
-        min = i8::min(min % 60, 59);
-        if min.is_negative() {
-            min = 60 + min;
-            hour -= 1;
-        }
-        hour = Self::fix_hour(hour);
-        *self = Self::Set(Some((hour as u8,min as u8)));
-    }
-    fn fix_hour(hour: i8) -> i8 {
-        if hour > 23 {
-            hour - 24
-        } else if hour.is_negative() {
-            24 + hour
-        } else {
-            hour
-        }
-    }
-    fn adjust_hour(&mut self, n: i8) {
-        let (mut hour, min) = self.inner_or_def();
-        hour += n;
-        hour = Self::fix_hour(hour);
-        *self = Self::Set(Some((hour as u8,min as u8)));
-    }
-}
-
-use std::fmt;
-impl fmt::Display for AlarmTime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some((hour, min)) = self.inner() {
-            write!(f, "{:02}:{:02}", hour, min)
-        } else {
-            write!(f, "--:--")
-        }
     }
 }
 
@@ -226,7 +127,7 @@ impl Application for Alarm {
             Some(msg) => Column::new().push(error_text(msg)),
         };
 
-        let column = column.push(clock_title("Tomorrow"));
+        let column = column.push(clock_title("Next"));
         let column = match &self.editing {
             Clocks::Tomorrow(time) => column
                 .push(clock(&time, clear))
@@ -386,50 +287,4 @@ fn clock_button<'a>(
     Button::new(edit, text)
         .on_press(Message::SwapEdit)
         .style(hour_min)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn edge_cases() {
-        let mut hour_min = AlarmTime(Some((0i8, 0i8)));
-        hour_min.adjust_min(-1i8);
-        assert_eq!(String::from("23:59"), format!("{}", hour_min));
-
-        let mut hour_min = AlarmTime(Some((23i8, 59i8)));
-        hour_min.adjust_min(1i8);
-        assert_eq!(String::from("00:00"), format!("{}", hour_min));
-    }
-
-    #[test]
-    fn symmetry() {
-        for m in 0..59i8 {
-            for h in 0..23i8 {
-                for i in &[1, 3, 9i8] {
-                    let org = AlarmTime(Some((h, m)));
-                    let mut hm = org.clone();
-                    hm.adjust_hour(*i);
-                    hm.adjust_hour(-1 * i);
-                    assert_eq!(
-                        org, hm,
-                        "symmetry test failed for h: {}, m:{} and i: {}",
-                        h, m, i
-                    );
-                }
-                for i in &[1, 5, 15i8] {
-                    let org = AlarmTime(Some((h, m)));
-                    let mut hm = org.clone();
-                    hm.adjust_min(*i);
-                    hm.adjust_min(-1 * i);
-                    assert_eq!(
-                        org, hm,
-                        "symmetry test failed for h: {}, m:{} and i: {}",
-                        h, m, i
-                    );
-                }
-            }
-        }
-    }
 }

@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=Morning
-Exec=/home/mobian/bin/start_alarm.sh
-Path=/home/mobian/bin/
+Exec=~/bin/start_alarm.sh
+Path=~/bin/
 Type=Application
-Icon=/home/mobian/bin/morning.png
+Icon=~/bin/morning.png
 Comment=Set home wakeup alarm
 Keywords=Alarm;Morning;Wakeup;
 Categories=Utility;
