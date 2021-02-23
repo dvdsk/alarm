@@ -44,11 +44,11 @@ impl Api {
         let future = match clock {
             Clocks::Usually(t) => {
                 let t = t.inner();
-                api.post("/alarm/usually", t)
+                api.post("/alarm/usually", *t)
             }
             Clocks::Tomorrow(t) => {
                 let t = t.inner();
-                api.post("/alarm/tomorrow", t)
+                api.post("/alarm/tomorrow", *t)
             }
         };
 

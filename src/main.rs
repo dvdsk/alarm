@@ -365,12 +365,15 @@ fn clock<'a>(hour_min: &AlarmTime, clear: &'a mut button::State) -> Container<'a
         .on_press(Message::Clear)
         .style(hour_min);
 
-    let row = Row::new()
-        .push(time_txt)
-        .push(clear)
-        .spacing(10)
-        .align_items(iced::Align::Center);
-    Container::new(row)
+    match hour_min.inner() {
+        Some(_) => Container::new(Row::new()
+            .push(time_txt)
+            .push(clear)
+            .spacing(10)
+            .align_items(iced::Align::Center)),
+        None => 
+            Container::new(time_txt),
+    }
 }
 
 fn clock_button<'a>(

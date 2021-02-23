@@ -8,12 +8,7 @@ const APP_BACKGROUND: Color = Color::from_rgb(
     0x3F as f32 / 255.0,
 );
 
-const TIME_SET_TEXT: Color = Color::from_rgb(
-    0xD3 as f32 / 255.0,
-    0xD3 as f32 / 255.0,
-    0xD3 as f32 / 255.0,
-);
-
+const TIME_SET_TEXT: Color = Color::from_rgb(0.8,0.1,0.1);
 const TIME_SYNCED_TEXT: Color = Color::WHITE;
 const TIME_BACKGROUND: Color = Color::from_rgb(0.11, 0.42, 0.87);
 const RED: Color = Color::from_rgb(0.80, 0.1, 0.1);
