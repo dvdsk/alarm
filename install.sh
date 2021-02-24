@@ -17,5 +17,5 @@ Categories=Utility;"
 
 echo "${desktop_file}" > ~/.local/share/applications/alarm.desktop
 
-echo "./alarm r https://domain:port user passw" > ~/bin/start_alarm.sh 
+echo "./alarm https://domain:port user passw" > ~/bin/start_alarm.sh 
 echo please edit the example start_alarm.sh file in ~/bin/
