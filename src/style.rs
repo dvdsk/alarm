@@ -104,7 +104,7 @@ mod synced {
                 background: TIME_BACKGROUND.into(),
                 border_radius: 0.0,
                 shadow_offset: Vector::new(0.0, 0.0),
-                text_color: TIME_SYNCED_TEXT.into(),
+                text_color: TIME_SYNCED_TEXT,
                 // text_color: Color::WHITE.into(),
                 ..button::Style::default()
             }

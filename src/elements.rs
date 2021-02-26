@@ -85,9 +85,9 @@ pub fn view_row(row: &mut [button::State], hour_mul: i8, min_mul: i8) -> Row<Mes
 
     Row::new()
         .push(adjust_button(hplus, "+", AdjHour(hour_mul)))
-        .push(adjust_button(hmin, "-", AdjHour(-1 * hour_mul)))
+        .push(adjust_button(hmin, "-", AdjHour(-hour_mul)))
         .push(Text::new(" "))
         .push(adjust_button(mplus, "+", AdjMinute(min_mul)))
-        .push(adjust_button(mmin, "-", AdjMinute(-1 * min_mul)))
+        .push(adjust_button(mmin, "-", AdjMinute(-min_mul)))
         .align_items(iced::Align::Center)
 }

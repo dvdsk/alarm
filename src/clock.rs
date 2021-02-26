@@ -36,7 +36,7 @@ pub enum AlarmTime {
 
 impl AlarmTime {
     pub fn set_synced(&mut self) {
-        let t = self.inner().clone();
+        let t = *self.inner();
         *self = Self::Synced(t);
     }
     pub fn inner_mut(&mut self) -> &mut Time {
@@ -61,11 +61,11 @@ impl AlarmTime {
 
     pub fn adjust_min(&mut self, n: i8) {
         let (mut hour, mut min) = self.inner_or_def();
-        min = min + n;
+        min += n;
         hour += min / 60;
         min = i8::min(min % 60, 59);
         if min.is_negative() {
-            min = 60 + min;
+            min += 60;
             hour -= 1;
         }
         hour = Self::fix_hour(hour);
