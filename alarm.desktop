@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Morning
-Exec=~/bin/start_alarm.sh
-Path=~/bin/
-Type=Application
-Icon=~/bin/morning.png
-Comment=Set home wakeup alarm
-Keywords=Alarm;Morning;Wakeup;
-Categories=Utility;

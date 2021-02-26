@@ -35,7 +35,7 @@ impl Api {
         Command::perform(api.do_gets(),
             |res| match res {
                 Ok((t1,t2)) => Message::RemoteAlarms(t1,t2),
-                Err(e) => Message::RemoteError(e),
+                Err(e) => Message::RemoteError(e, Box::new(Message::ReTryGetAlarms)),
             })
     }
 
@@ -57,7 +57,7 @@ impl Api {
             let clock = clock.clone();
             match res {
             Ok(_) => Message::Synced(clock),
-            Err(e) => Message::RemoteError(e),
+            Err(e) => Message::RemoteError(e, Box::new(Message::ReTrySync(clock))),
         }})
     }
 

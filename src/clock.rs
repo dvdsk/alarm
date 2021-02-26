@@ -87,16 +87,3 @@ impl AlarmTime {
         *self = Self::Set(Some((hour as u8,min as u8)));
     }
 }
-
-use std::fmt;
-impl fmt::Display for AlarmTime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some((hour, min)) = self.inner() {
-            write!(f, "{:02}:{:02}", hour, min)
-        } else {
-            write!(f, "--:--")
-        }
-    }
-}
-
-

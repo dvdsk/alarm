@@ -11,6 +11,7 @@ const APP_BACKGROUND: Color = Color::from_rgb(
 const TIME_SET_TEXT: Color = Color::from_rgb(0.8,0.1,0.1);
 const TIME_SYNCED_TEXT: Color = Color::WHITE;
 const TIME_BACKGROUND: Color = Color::from_rgb(0.11, 0.42, 0.87);
+const GREY: Color = Color::from_rgb(0.8, 0.8, 0.8);
 const RED: Color = Color::from_rgb(0.80, 0.1, 0.1);
 
 pub struct Error;
@@ -19,6 +20,17 @@ impl container::StyleSheet for Error {
         container::Style {
             background: None,
             text_color: RED.into(),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct PlaceHolder;
+impl container::StyleSheet for PlaceHolder {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: TIME_BACKGROUND.into(),
+            text_color: GREY.into(),
             ..container::Style::default()
         }
     }
