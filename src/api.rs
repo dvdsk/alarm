@@ -39,7 +39,7 @@ impl Api {
             })
     }
 
-    pub fn sync(&self, clock: &Clocks) -> Command<Message> {
+    pub fn sync(&self, clock: Clocks) -> Command<Message> {
         let api = self.clone();
         let future = match clock {
             Clocks::Usually(t) => {
@@ -52,9 +52,7 @@ impl Api {
             }
         };
 
-        let clock = clock.clone();
         Command::perform(future, move |res| {
-            let clock = clock.clone();
             match res {
             Ok(_) => Message::Synced(clock),
             Err(e) => Message::RemoteError(e, Box::new(Message::ReTrySync(clock))),

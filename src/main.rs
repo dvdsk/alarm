@@ -105,18 +105,25 @@ impl Application for Alarm {
         match message {
             Clear => {
                 self.editing.set_none();
-                return self.api.sync(&self.editing);
+                return self.api.sync(self.editing);
             }
             AdjHour(h) => {
+                self.tomorrow_to_default_if_none();
                 self.editing.inner_mut().adjust_hour(h);
-                return self.api.sync(&self.editing);
+                self.tomorrow_to_none_if_default();
+                return self.api.sync(self.editing);
             }
             AdjMinute(m) => {
+                self.tomorrow_to_default_if_none();
                 self.editing.inner_mut().adjust_min(m);
-                return self.api.sync(&self.editing);
+                self.tomorrow_to_none_if_default();
+                return self.api.sync(self.editing);
             }
-            ReTryGetAlarms => return self.api.clone().get_alarms(),
-            ReTrySync(c) => return self.api.sync(&c),
+            ReTryGetAlarms => return self.api.get_alarms(),
+            ReTrySync(c) => {
+                let c = self.current_clock(c);
+                return self.api.sync(c);
+            }
             SwapEdit => mem::swap(&mut self.editing, &mut self.other),
             Synced(clock) => self.set_synced(clock),
             RemoteAlarms(t1,t2) => self.set_remote_times(t1,t2),
@@ -200,6 +207,16 @@ impl Alarm {
         }
     }
 
+    fn current_clock(&mut self, clock: Clocks) -> Clocks {
+        use Clocks::*;
+        match (clock, &self.editing) {
+            (Tomorrow(_), Tomorrow(_)) => self.editing,
+            (Usually(_), Usually(_)) => self.editing,
+            (Tomorrow(_), Usually(_)) => self.other,
+            (Usually(_), Tomorrow(_)) => self.other,
+        }
+    }
+
     fn set_synced(&mut self, clock: Clocks) {
         use Clocks::*;
 
@@ -214,6 +231,24 @@ impl Alarm {
             (Usually(t1), Tomorrow(_)) if t1 == t3 =>
                 self.other = clock.set_synced(),
             _ => (), // time setting has changed, not synced
+        }
+    }
+    
+    /// if the clock usually is set and tomorrow is not set the value
+    /// of tomorrow to usually
+    pub fn tomorrow_to_default_if_none(&mut self) {
+        let (editing, default) = (&mut self.editing, self.other.inner().inner());
+        if let (Clocks::Tomorrow(ref mut t1), Some(default)) = (editing, default) {
+            if t1.inner().is_none() {
+                *t1.inner_mut() = Some(*default);
+            }
+        }
+    }
+
+    pub fn tomorrow_to_none_if_default(&mut self) {
+        let (editing, default) = (self.editing.inner().inner(), self.other.inner().inner());
+        if editing == default {
+            *self.editing.inner_mut().inner_mut() = None;
         }
     }
 }

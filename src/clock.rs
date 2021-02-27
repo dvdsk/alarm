@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Clocks {
     Tomorrow(AlarmTime),
     Usually(AlarmTime),
@@ -28,7 +28,7 @@ impl Clocks {
 }
 
 pub type Time = Option<(u8,u8)>;
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AlarmTime {
     Set(Time),
     Synced(Time),
