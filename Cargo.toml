@@ -9,8 +9,8 @@ edition = "2018"
 pinephone = ["iced/glow_OpenGL2ES"]
 
 [dependencies]
-iced = { git= "https://github.com/dskleingeld/iced", features = ["glow", "tokio"] }
-iced_native = { git= "https://github.com/dskleingeld/iced"}
+iced = { git= "https://github.com/dskleingeld/iced", rev="3187850", features = ["glow", "tokio"] }
+iced_native = { git= "https://github.com/dskleingeld/iced", rev="3187850" }
 chrono = "0.4"
 structopt = { version = "0.3", features = [ "paw" ] }
 paw = "1"

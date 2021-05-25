@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 
-cp alarm.desktop ~/.local/share/applications/
-cp morning.png ~/bin/
-cp target/release/alarm ~/bin/
+sudo apt-get install libx11-dev
+
+cargo build --release
+cp morning.png ~/.local/share/icons
+cp target/release/alarm ~/.local/bin/
+
+read -p "domain: " domain
+read -p "username: " user
+read -s -p "password: " pass
 
 desktop_file="
 [Desktop Entry]
 Name=Morning
-Exec=${HOME}/bin/start_alarm.sh
-Path=${HOME}/bin/
+Exec=${HOME}/.local/bin/alarm $domain $user $pass
 Type=Application
-Icon=${HOME}/bin/morning.png
+Icon=${HOME}/.local/share/icons/morning.png
 Comment=Set home wakeup alarm
 Keywords=Alarm;Morning;Wakeup;
 Categories=Utility;"
 
 echo "${desktop_file}" > ~/.local/share/applications/alarm.desktop
 
-echo "./alarm https://domain:port user passw" > ~/bin/start_alarm.sh 
-echo please edit the example start_alarm.sh file in ~/bin/
+echo install done
