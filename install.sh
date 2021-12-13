@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-cp alarm.desktop ~/.local/share/applications/
 cp morning.png ~/bin/
 cp target/release/alarm ~/bin/
 
@@ -17,5 +16,7 @@ Categories=Utility;"
 
 echo "${desktop_file}" > ~/.local/share/applications/alarm.desktop
 
-echo "./alarm https://domain:port user passw" > ~/bin/start_alarm.sh 
-echo please edit the example start_alarm.sh file in ~/bin/
+if [ ! -f ~/bin/start_alarm.sh ]; then
+	echo "./alarm https://domain:port user passw" > ~/bin/start_alarm.sh 
+	echo please edit the example start_alarm.sh file in ~/bin/
+fi

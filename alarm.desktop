@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Alarm
+# run using X11 see issue #33
+Exec=/home/manjaro/.local/bin/alarm <URL> <USER> <PASSW>
+# working directory
+Path=/home/manjaro/.local/share/alarm
+Type=Application
+Icon=/home/manjaro/.local/share/icons/morning.png
+Comment=Subscribe, download and stream podcasts
+Keywords=Sound;Podcast;podcasts;
+Categories=Audio;
